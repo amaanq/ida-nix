@@ -1,0 +1,26 @@
+{
+  "bindiff": {
+    "type": "github",
+    "owner": "amaanq",
+    "repo": "bindiff",
+    "rev": "7b3acba7d0b98daa591b48bbc4a4a72f50c1118b",
+    "narHash": "sha256-jYfeucfuJ80wFEjMMt7JKwXg+/gqm0ovqeyAI4inOts=",
+    "lastModified": 1784352958
+  },
+  "ida-pro-mcp": {
+    "type": "github",
+    "owner": "mrexodia",
+    "repo": "ida-pro-mcp",
+    "rev": "1be78d04119748066d5e73070302ad62916002ea",
+    "narHash": "sha256-IG6ukqU2hJHnigAhj3Oo9rjWmaXrMzadBRKhBM7a1Zg=",
+    "lastModified": 1783945228
+  },
+  "nixpkgs": {
+    "type": "github",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "rev": "753cc8a3a87467296ddd1fa93f0cc3e81120ee46",
+    "narHash": "sha256-KesHgItiZPgGX740axSiQLcIQ8D24MDqNpkKYWIek8k=",
+    "lastModified": 1784120854
+  }
+}
