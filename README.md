@@ -67,6 +67,36 @@ ABI and native SDK checks are hard on purpose. Updating IDA means verifying
 the interpreter and rebuilding native plugins against that release's SDK, not
 just changing a version string.
 
+## Base customizations
+
+`pkgs.mkIda` accepts a `customizations` attribute set for changes that must be
+applied to the installed IDA tree. `files` maps individual source files to
+paths relative to the IDA root. `hexPatches` replaces exact byte strings after
+those files are installed and before fixup runs.
+
+```nix
+customizations = {
+  files = [
+    {
+      source = ./idapro.hexlic;
+      target = "idapro.hexlic";
+    }
+  ];
+  hexPatches = [
+    {
+      filename = "libida.so";
+      from = "00112233";
+      to = "44556677";
+      assertCount = 1;
+    }
+  ];
+};
+```
+
+Patch values must be nonempty, equal-length hex strings. `assertCount` defaults
+to one so an installer layout change fails the build instead of leaving an
+unpatched or partly patched file.
+
 ## Plugin API
 
 Every plugin is built with `mkIdaPlugin`, which produces a validated

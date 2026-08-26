@@ -36,10 +36,16 @@ let
       release,
       resolvedPython,
       installer ? null,
+      customizations ? { },
       extraRuntimeDependencies ? [ ],
     }:
     mkIdaBase {
-      inherit extraRuntimeDependencies release resolvedPython;
+      inherit
+        customizations
+        extraRuntimeDependencies
+        release
+        resolvedPython
+        ;
       source = installerFor release installer;
     };
 
@@ -50,6 +56,7 @@ let
       release ? releases.versions.${version} or null,
       python ? null,
       plugins ? [ ],
+      customizations ? { },
       extraRuntimeDependencies ? [ ],
     }:
     let
@@ -77,7 +84,12 @@ let
       resolvedPythonAbi =
         resolvedPython.pythonVersion or (lib.versions.majorMinor resolvedPython.version);
       base = buildIdaBase {
-        inherit extraRuntimeDependencies installer resolvedPython;
+        inherit
+          customizations
+          extraRuntimeDependencies
+          installer
+          resolvedPython
+          ;
         release = resolvedRelease;
       };
     in

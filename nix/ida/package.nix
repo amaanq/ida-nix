@@ -3,10 +3,77 @@
   release,
   resolvedPython,
   source,
+  customizations ? { },
   extraRuntimeDependencies ? [ ],
 }:
 let
   inherit (pkgs) lib;
+  files = customizations.files or [ ];
+  hexPatches = customizations.hexPatches or [ ];
+  hasOnlyAttrs =
+    allowed: value: lib.all (name: builtins.elem name allowed) (builtins.attrNames value);
+  isRelativePath =
+    value:
+    builtins.isString value
+    && value != ""
+    && !lib.hasPrefix "/" value
+    && !lib.hasInfix "\n" value
+    && !lib.hasInfix "\r" value
+    && lib.all (component: component != "" && component != "." && component != "..") (
+      lib.splitString "/" value
+    );
+  isHex =
+    value:
+    builtins.isString value
+    && value != ""
+    && lib.mod (builtins.stringLength value) 2 == 0
+    && builtins.match "[0-9a-fA-F]+" value != null;
+  validFile =
+    file:
+    builtins.isAttrs file
+    && hasOnlyAttrs [
+      "source"
+      "target"
+    ] file
+    && file ? source
+    && (
+      builtins.isPath file.source
+      || lib.isDerivation file.source
+      || (builtins.isString file.source && builtins.hasContext file.source)
+    )
+    && file ? target
+    && isRelativePath file.target;
+  validHexPatch =
+    patch:
+    builtins.isAttrs patch
+    && hasOnlyAttrs [
+      "assertCount"
+      "filename"
+      "from"
+      "to"
+    ] patch
+    && patch ? filename
+    && isRelativePath patch.filename
+    && patch ? from
+    && isHex patch.from
+    && patch ? to
+    && isHex patch.to
+    && builtins.stringLength patch.from == builtins.stringLength patch.to
+    && builtins.isInt (patch.assertCount or 1)
+    && (patch.assertCount or 1) > 0;
+  fileTargets = map (file: file.target) files;
+  installFiles = lib.concatMapStringsSep "\n" (file: ''
+    install -Dm644 ${file.source} "$idaRoot"/${lib.escapeShellArg file.target}
+  '') files;
+  patchFiles = lib.concatMapStringsSep "\n" (
+    patch:
+    let
+      assertCount = toString (patch.assertCount or 1);
+    in
+    ''
+      perl -0777 -pi -e 'my $expected = ${assertCount}; my $count = (s/\Q''${\pack("H*","${patch.from}")}\E/''${\pack("H*","${patch.to}")}/g) || 0; die "Expected $expected substitutions, did $count\n" if $count != $expected' "$idaRoot"/${lib.escapeShellArg patch.filename}
+    ''
+  ) hexPatches;
   runtimeDependencies =
     (
       with pkgs;
@@ -66,12 +133,14 @@ let
     strictDeps = true;
     dontWrapQtApps = true;
 
-    nativeBuildInputs = with pkgs; [
-      autoPatchelfHook
-      copyDesktopItems
-      makeWrapper
-      qt6.wrapQtAppsHook
-    ];
+    nativeBuildInputs =
+      (with pkgs; [
+        autoPatchelfHook
+        copyDesktopItems
+        makeWrapper
+        qt6.wrapQtAppsHook
+      ])
+      ++ lib.optional (hexPatches != [ ]) pkgs.perl;
 
     buildInputs = runtimeDependencies;
     inherit runtimeDependencies;
@@ -86,6 +155,9 @@ let
 
       dynamicLinker="$(< "$NIX_CC/nix-support/dynamic-linker")"
       "$dynamicLinker" "$src" --mode unattended --prefix "$idaRoot"
+
+      ${installFiles}
+      ${patchFiles}
 
       if [ ! -x "$idaRoot/ida" ]; then
         echo "IDA installer did not create $idaRoot/ida" >&2
@@ -143,4 +215,20 @@ let
     };
   };
 in
+assert lib.assertMsg (builtins.isAttrs customizations)
+  "ida-nix customizations must be an attribute set";
+assert lib.assertMsg (hasOnlyAttrs [
+  "files"
+  "hexPatches"
+] customizations) "ida-nix customizations contains an unknown attribute";
+assert lib.assertMsg (builtins.isList files) "ida-nix customizations.files must be a list";
+assert lib.assertMsg (lib.all validFile files)
+  "ida-nix customizations.files contains an invalid file";
+assert lib.assertMsg (
+  builtins.length fileTargets == builtins.length (lib.unique fileTargets)
+) "ida-nix customizations.files contains duplicate targets";
+assert lib.assertMsg (builtins.isList hexPatches)
+  "ida-nix customizations.hexPatches must be a list";
+assert lib.assertMsg (lib.all validHexPatch hexPatches)
+  "ida-nix customizations.hexPatches contains an invalid patch";
 ida

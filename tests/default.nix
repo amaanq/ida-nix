@@ -238,13 +238,53 @@ let
       grep -F ${lib.escapeShellArg message} "${failure}/testBuildFailure.log"
       touch "$out"
     '';
-  fixtureBase = scope.mkIda {
-    inherit (fixtureRelease) version;
-    installer = fixtureInstaller;
-    python = pkgs.python314;
-    plugins = [ ];
-    release = fixtureRelease;
+  mkFixtureBase =
+    customizations:
+    scope.mkIda {
+      inherit (fixtureRelease) version;
+      inherit customizations;
+      installer = fixtureInstaller;
+      python = pkgs.python314;
+      plugins = [ ];
+      release = fixtureRelease;
+    };
+  fixtureBase = mkFixtureBase { };
+  customizedFixtureBase = mkFixtureBase {
+    files = [
+      {
+        source = ./fixtures/idapro.hexlic;
+        target = "idapro.hexlic";
+      }
+    ];
+    hexPatches = [
+      {
+        filename = "docs/asset with spaces.png";
+        from = "00010203";
+        to = "04050607";
+      }
+    ];
   };
+  mismatchedPatchBase = mkFixtureBase {
+    hexPatches = [
+      {
+        filename = "docs/asset with spaces.png";
+        from = "00010203";
+        to = "04050607";
+        assertCount = 2;
+      }
+    ];
+  };
+  invalidHexPatch =
+    builtins.tryEval
+      (mkFixtureBase {
+        hexPatches = [
+          {
+            filename = "docs/asset with spaces.png";
+            from = "not hex";
+            to = "04050607";
+          }
+        ];
+      }).drvPath;
   fixtureIda = fixtureBase.withPlugins [ fixturePlugin ];
   stackedFixtureIda = fixtureIda.withPlugins [ secondFixturePlugin ];
   commandOwnershipIda = fixtureBase.withPlugins [
@@ -457,6 +497,7 @@ in
 {
   api =
     assert scope.lib.isIdaPlugin fixturePlugin;
+    assert !invalidHexPatch.success;
     assert fixtureIda.version == fixtureRelease.version;
     assert fixtureIda.pluginIds == [ "fixture" ];
     assert
@@ -517,6 +558,17 @@ in
 
     touch "$out"
   '';
+
+  base-customization = pkgs.runCommand "ida-nix-base-customization-check" { } ''
+    cmp "${customizedFixtureBase}/opt/ida/docs/asset with spaces.png" \
+      <(printf '\004\005\006\007')
+    grep -Fx fixture "${customizedFixtureBase}/opt/ida/idapro.hexlic"
+    touch "$out"
+  '';
+
+  hex-patch-count-rejected =
+    expectBuildFailure "hex-patch-count-rejected" "Expected 2 substitutions, did 1"
+      mismatchedPatchBase.unwrapped;
 
   guardrails =
     assert lib.assertMsg (unexpectedGuardrailFailures == [ ])

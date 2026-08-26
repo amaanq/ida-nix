@@ -57,6 +57,11 @@ int main(int argc, char **argv) {
   if (asset_file == NULL) {
     return 4;
   }
+  const unsigned char asset_contents[] = {0x00, 0x01, 0x02, 0x03};
+  if (fwrite(asset_contents, sizeof(asset_contents), 1, asset_file) != 1) {
+    fclose(asset_file);
+    return 4;
+  }
   fclose(asset_file);
 
   char executable[PATH_MAX];
