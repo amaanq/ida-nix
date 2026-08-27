@@ -93,9 +93,19 @@ customizations = {
 };
 ```
 
-Patch values must be nonempty, equal-length hex strings. `assertCount` defaults
-to one so an installer layout change fails the build instead of leaving an
-unpatched or partly patched file.
+Patch values must be nonempty, equal-length hex strings. Patches replace every
+occurrence and fail when nothing matches. Set `assertCount` when a release has a
+known exact match count.
+
+For installers managed outside `mkIda`, `ida-nix.lib.mkHexPatcher` builds the
+same validated patcher. The generated command takes the IDA root as its only
+argument.
+
+```nix
+patcher = ida-nix.lib.mkHexPatcher {
+  inherit pkgs hexPatches;
+};
+```
 
 ## Plugin API
 

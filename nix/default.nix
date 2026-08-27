@@ -8,6 +8,7 @@ let
   inherit (pkgs) lib;
   releases = import ./ida/releases.nix;
   pluginLib = import ./plugin-lib.nix { inherit pkgs; };
+  hexPatchLib = import ./hex-patches.nix { inherit lib; };
   mkIdaBase = import ./ida/package.nix { inherit pkgs; };
   defaultRelease = releases.versions.${releases.default};
   defaultPython = pkgs.${defaultRelease.pythonPackage};
@@ -166,5 +167,6 @@ in
       pluginMetadata
       ;
     inherit mkIda releases;
+    inherit (hexPatchLib) mkHexPatcher;
   };
 }

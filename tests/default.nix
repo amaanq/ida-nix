@@ -270,7 +270,7 @@ let
         filename = "docs/asset with spaces.png";
         from = "00010203";
         to = "04050607";
-        assertCount = 2;
+        assertCount = 3;
       }
     ];
   };
@@ -561,13 +561,13 @@ in
 
   base-customization = pkgs.runCommand "ida-nix-base-customization-check" { } ''
     cmp "${customizedFixtureBase}/opt/ida/docs/asset with spaces.png" \
-      <(printf '\004\005\006\007')
+      <(printf '\004\005\006\007\004\005\006\007')
     grep -Fx fixture "${customizedFixtureBase}/opt/ida/idapro.hexlic"
     touch "$out"
   '';
 
   hex-patch-count-rejected =
-    expectBuildFailure "hex-patch-count-rejected" "Expected 2 substitutions, did 1"
+    expectBuildFailure "hex-patch-count-rejected" "Expected 3 substitutions, did 2"
       mismatchedPatchBase.unwrapped;
 
   guardrails =

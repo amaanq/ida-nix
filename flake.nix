@@ -7,6 +7,7 @@
       inputs = (import ./.tack) { overrides = args.tackOverrides or { }; };
       inherit (inputs) bindiff ida-pro-mcp nixpkgs;
       inherit (nixpkgs) lib;
+      hexPatchLib = import ./nix/hex-patches.nix { inherit lib; };
       systems = [ "x86_64-linux" ];
       forAllSystems = lib.genAttrs systems;
       mkPkgs =
@@ -29,6 +30,7 @@
       lib = {
         releases = import ./nix/ida/releases.nix;
         forSystem = system: scopes.${system}.lib;
+        inherit (hexPatchLib) mkHexPatcher;
       };
 
       overlays.default = final: _prev: {
