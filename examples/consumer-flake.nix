@@ -14,7 +14,7 @@
     {
       packages.${system}.default = pkgs.ida-pro.withPlugins [
         pkgs.idaPlugins.bindiff
-        pkgs.idaPlugins.ida-pro-mcp
+        pkgs.idaPlugins.ida-mcp
       ];
     };
 }

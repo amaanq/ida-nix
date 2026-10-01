@@ -51,13 +51,18 @@ let
   stackedFixtureIda = fixtureIda.withPlugins [ secondFixturePlugin ];
   pythonFixtureIda = mkFixtureIda {
     plugins = [
-      scope.plugins.ida-pro-mcp
+      scope.plugins.ida-mcp
       scope.plugins.capa-explorer
     ];
   };
 in
 {
   inherit (scope.plugins) bindiff;
+
+  ida-mcp = pkgs.runCommand "ida-nix-ida-mcp-check" { } ''
+    test -x ${dirOf (builtins.head scope.plugins.ida-mcp.idaPlugin.commands)}/ida-nexus
+    touch "$out"
+  '';
 
   fixture = pkgs.runCommand "ida-nix-fixture-check" { } ''
     homeRoot="$TMPDIR/home"
@@ -102,9 +107,8 @@ in
     '';
 
   python-environment = pkgs.runCommand "ida-nix-python-environment-check" { } ''
-    ${pythonFixtureIda.pythonEnv}/bin/python3 -c 'import capa, ida_pro_mcp'
-    ${pythonFixtureIda.pythonEnv}/bin/python3 -c 'import importlib.util; assert importlib.util.find_spec("ida_mcp")'
-    test -x ${pythonFixtureIda}/bin/idalib-mcp
+    ${pythonFixtureIda.pythonEnv}/bin/python3 -c 'import capa, ida_mcp, ida_nexus'
+    test -x ${pythonFixtureIda}/bin/ida-mcp
     touch "$out"
   '';
 }

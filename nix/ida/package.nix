@@ -124,12 +124,15 @@ pkgs.stdenv.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru.ida = rec {
-    inherit python;
-    root = "${finalAttrs.finalPackage}/opt/ida";
-    qtPluginPath = "${root}/plugins:${qtBasePluginPath}";
-    runtimeLibraryPath = "${root}:${lib.makeLibraryPath runtimeDependencies}";
-  };
+  passthru.ida =
+    let
+      root = "${finalAttrs.finalPackage}/opt/ida";
+    in
+    {
+      inherit python root;
+      qtPluginPath = "${root}/plugins:${qtBasePluginPath}";
+      runtimeLibraryPath = "${root}:${lib.makeLibraryPath runtimeDependencies}";
+    };
 
   meta = {
     description = "IDA Pro interactive disassembler and debugger";

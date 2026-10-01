@@ -2,7 +2,6 @@
   pkgs,
   bindiff,
   bindiffSrc,
-  ida-pro-mcp,
 }:
 let
   releases = import ./ida/releases.nix;
@@ -42,21 +41,18 @@ let
         ;
     }) plugins;
 
-  mcp = pkgs.callPackage ./plugins/ida-pro-mcp.nix {
-    python = defaultPython;
-    src = ida-pro-mcp;
-  };
+  hexRaysMcp = pkgs.callPackage ./plugins/ida-mcp.nix { python = defaultPython; };
 
   plugins = {
     bindiff = pkgs.callPackage ./plugins/bindiff.nix { inherit bindiff bindiffSrc; };
-    ida-pro-mcp = mcp.plugin;
+    ida-mcp = hexRaysMcp.plugin;
     capa-explorer = pkgs.callPackage ./plugins/capa-explorer.nix { python = defaultPython; };
   };
 
   ida-pro = mkIda { };
   ida-pro-full = ida-pro.withPlugins [
     plugins.bindiff
-    plugins.ida-pro-mcp
+    plugins.ida-mcp
   ];
   ida-pro-malware = ida-pro-full.withPlugins [ plugins.capa-explorer ];
 in
@@ -70,5 +66,5 @@ in
     releases
     ;
   ida-pro-unwrapped = ida-pro.unwrapped;
-  ida-pro-mcp = mcp.package;
+  ida-mcp = hexRaysMcp.package;
 }

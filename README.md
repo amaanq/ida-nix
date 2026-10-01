@@ -5,19 +5,20 @@ packages it once, and plugins compose around it. IDA lives in
 a single derivation, so changing a plugin only rebuilds a thin profile and
 launcher layer.
 
-Currently targets IDA 9.2 on `x86_64-linux`.
+Currently targets IDA 9.4 on `x86_64-linux`, with 9.2 still available through
+`mkIda`.
 
 ## Outputs
 
 | Output                 | Contents                                                      |
 | ---------------------- | ------------------------------------------------------------- |
-| `ida-pro`              | IDA 9.2 without third-party plugins                           |
-| `ida-pro-full`         | IDA, BinDiff/BinExport, and ida-pro-mcp                       |
+| `ida-pro`              | IDA 9.4 without third-party plugins                           |
+| `ida-pro-full`         | IDA, BinDiff/BinExport, and the official Hex-Rays MCP server  |
 | `ida-pro-malware`      | The full profile plus capa Explorer                           |
 | `plugin-bindiff`       | BinDiff/BinExport built with SDK 9.2, compatible through 9.4  |
-| `plugin-ida-pro-mcp`   | The IDA-side MCP bridge                                       |
+| `plugin-ida-mcp`       | The GUI bridge for the official Hex-Rays MCP server           |
 | `plugin-capa-explorer` | capa Explorer, available as an opt-in heavy profile           |
-| `ida-pro-mcp`          | The GUI-bridge server plus the IDALib-capable command payload |
+| `ida-mcp`              | The official Hex-Rays MCP server                              |
 
 BinDiff is built from my IDA 9-compatible
 [`bindiff`](https://github.com/amaanq/bindiff) fork. The open-source native
@@ -53,7 +54,7 @@ pkgs = import nixpkgs {
 
 ida = pkgs.ida-pro.withPlugins [
   pkgs.idaPlugins.bindiff
-  pkgs.idaPlugins.ida-pro-mcp
+  pkgs.idaPlugins.ida-mcp
 ];
 ```
 
@@ -139,17 +140,13 @@ overrides keep working.
 
 ## MCP notes
 
-ida-pro-mcp is pinned at 2.0.0. The package doesn't run the upstream
-self-installer or touch MCP client configuration under `$HOME`, and the
-generated server code is produced during the Nix build instead of at runtime.
-
-`nix run .#ida-pro-mcp` starts the GUI-bridge server. `idalib-mcp` needs a
-licensed IDA installation, so use the command from `ida-pro-full`, where it's
-wrapped with the matching `IDADIR`, `idapro`, and runtime libraries. The
-IDALib server initializes Hex-Rays unconditionally, so it needs a decompiler
-license. The GUI bridge listens on loopback and can mutate
-the open database. Only enable unsafe/debugger operations when you trust both
-the client and the binary you're analyzing.
+`ida-pro-full` ships the official [Hex-Rays MCP
+server](https://github.com/HexRaysSA/ida-mcp), which needs IDA 9.4. Run
+`ida-mcp stdio` from the composed package so idalib workers get the matching
+`IDADIR`. It shares one database between the GUI and any number of agents,
+and records every session, code and results included, under
+`$IDAUSR/mcp/sessions`. Its `execute_python` tool runs arbitrary Python inside
+IDA, so treat the binary under analysis as untrusted input.
 
 ## Verification
 
@@ -164,7 +161,7 @@ packages.
 
 There's deliberately no real IDA smoke test in public CI, since the licensed
 installer isn't available there. Run the composed package against `idat -A`
-before promoting a new IDA, SDK, Qt, or Python combination. The 9.2 pin
+before promoting a new IDA, SDK, Qt, or Python combination. The 9.4 pin
 selects Python 3.14, which Hex-Rays doesn't explicitly guarantee, so a pin
 update isn't validated until real GUI and headless smoke tests pass.
 

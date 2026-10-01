@@ -9,7 +9,9 @@ fetched rather than vendored, except for Tack's generated resolver.
 | [amaanq/bindiff](https://github.com/amaanq/bindiff)             | BinDiff engine and IDA plugins                 | Apache-2.0  |
 | [google/binexport](https://github.com/google/binexport)         | BinExport IDA plugin                           | Apache-2.0  |
 | [HexRaysSA/ida-sdk](https://github.com/HexRaysSA/ida-sdk)       | Native plugin build SDK                        | MIT         |
-| [mrexodia/ida-pro-mcp](https://github.com/mrexodia/ida-pro-mcp) | MCP servers and IDA bridge                     | MIT         |
+| [HexRaysSA/ida-mcp](https://github.com/HexRaysSA/ida-mcp)       | Official MCP server and IDA bridge             | MIT         |
+| [HexRaysSA/ida-nexus](https://github.com/HexRaysSA/ida-nexus)   | Shared IDA database runtime for ida-mcp        | MIT         |
+| [mrexodia/zeromcp](https://github.com/mrexodia/zeromcp)         | MCP framework for ida-mcp                      | MIT         |
 | [Hex-Rays/idapro](https://pypi.org/project/idapro/)             | IDALib Python bootstrap                        | MIT         |
 | [mandiant/capa](https://github.com/mandiant/capa)               | Optional capability explorer                   | Apache-2.0  |
 | [Tack](https://github.com/manic-systems/tack)                   | Vendored input resolver at `.tack/default.nix` | EUPL-1.2    |

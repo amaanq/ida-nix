@@ -5,7 +5,7 @@
     args:
     let
       inputs = (import ./.tack) { overrides = args.tackOverrides or { }; };
-      inherit (inputs) bindiff ida-pro-mcp nixpkgs;
+      inherit (inputs) bindiff nixpkgs;
       inherit (nixpkgs) lib;
       forAllSystems = lib.genAttrs [ "x86_64-linux" ];
       mkPkgs =
@@ -17,7 +17,7 @@
       mkScope =
         pkgs:
         import ./nix {
-          inherit pkgs ida-pro-mcp;
+          inherit pkgs;
           bindiff = bindiff.packages.${pkgs.stdenv.hostPlatform.system}.bindiff-ida;
           bindiffSrc = bindiff.outPath;
         };
@@ -41,7 +41,7 @@
             ida-pro-unwrapped
             ida-pro-full
             ida-pro-malware
-            ida-pro-mcp
+            ida-mcp
             mkIda
             ;
           idaPlugins = scope.plugins;
@@ -61,7 +61,7 @@
             ida-pro-unwrapped
             ida-pro-full
             ida-pro-malware
-            ida-pro-mcp
+            ida-mcp
             ;
         }
         // lib.mapAttrs' (name: lib.nameValuePair "plugin-${name}") scope.plugins

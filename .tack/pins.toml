@@ -9,7 +9,3 @@ url = "github:NixOS/nixpkgs/nixos-unstable"
 
 [inputs.bindiff]
 url = "github:amaanq/bindiff"
-
-[inputs.ida-pro-mcp]
-url = "github:mrexodia/ida-pro-mcp"
-type = "fetch"
