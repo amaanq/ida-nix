@@ -1,42 +1,5 @@
 { lib }:
-let
-  hasOnlyAttrs =
-    allowed: value: lib.all (name: builtins.elem name allowed) (builtins.attrNames value);
-  isRelativePath =
-    value:
-    builtins.isString value
-    && value != ""
-    && !lib.hasPrefix "/" value
-    && !lib.hasInfix "\n" value
-    && !lib.hasInfix "\r" value
-    && lib.all (component: component != "" && component != "." && component != "..") (
-      lib.splitString "/" value
-    );
-  isHex =
-    value:
-    builtins.isString value
-    && value != ""
-    && lib.mod (builtins.stringLength value) 2 == 0
-    && builtins.match "[0-9a-fA-F]+" value != null;
-  validHexPatch =
-    patch:
-    builtins.isAttrs patch
-    && hasOnlyAttrs [
-      "assertCount"
-      "filename"
-      "from"
-      "to"
-    ] patch
-    && patch ? filename
-    && isRelativePath patch.filename
-    && patch ? from
-    && isHex patch.from
-    && patch ? to
-    && isHex patch.to
-    && builtins.stringLength patch.from == builtins.stringLength patch.to
-    && (
-      (patch.assertCount or null) == null || (builtins.isInt patch.assertCount && patch.assertCount > 0)
-    );
+{
   mkHexPatcher =
     {
       pkgs,
@@ -44,24 +7,27 @@ let
       name ? "ida-hex-patcher",
     }:
     let
-      patchCommands = lib.concatMapStringsSep "\n" (
+      isHex = value: builtins.match "([0-9a-fA-F]{2})+" value != null;
+      validPatch =
+        patch:
+        isHex patch.from
+        && isHex patch.to
+        && builtins.stringLength patch.from == builtins.stringLength patch.to;
+      patchCommand =
         patch:
         let
-          assertCount = patch.assertCount or null;
           countCheck =
-            if assertCount == null then
-              ''die "No substitutions in $ARGV\n" if $count == 0''
+            if patch ? assertCount then
+              ''die "Expected ${toString patch.assertCount} substitutions, did $count in $ARGV\n" if $count != ${toString patch.assertCount}''
             else
-              ''die "Expected ${toString assertCount} substitutions, did $count in $ARGV\n" if $count != ${toString assertCount}'';
+              ''die "No substitutions in $ARGV\n" if $count == 0'';
         in
         ''
           perl -0777 -pi -e 'my $count = (s/\Q''${\pack("H*","${patch.from}")}\E/''${\pack("H*","${patch.to}")}/g) || 0; ${countCheck}' "$idaRoot"/${lib.escapeShellArg patch.filename}
-        ''
-      ) hexPatches;
+        '';
     in
-    assert lib.assertMsg (builtins.isList hexPatches) "ida-nix hexPatches must be a list";
-    assert lib.assertMsg (lib.all validHexPatch hexPatches)
-      "ida-nix hexPatches contains an invalid patch";
+    assert lib.assertMsg (lib.all validPatch hexPatches)
+      "ida-nix: hex patches need equal-length, nonempty, even-length hex strings";
     pkgs.writeShellApplication {
       inherit name;
       runtimeInputs = [ pkgs.perl ];
@@ -72,14 +38,7 @@ let
         fi
 
         idaRoot=$1
-        ${patchCommands}
+        ${lib.concatMapStrings patchCommand hexPatches}
       '';
     };
-in
-{
-  inherit
-    isRelativePath
-    mkHexPatcher
-    validHexPatch
-    ;
 }

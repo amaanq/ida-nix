@@ -1,7 +1,7 @@
 # ida-nix
 
 Composable Nix packaging for IDA Pro. You supply the installer, the flake
-packages it once, and typed, versioned plugins compose around it. IDA lives in
+packages it once, and plugins compose around it. IDA lives in
 a single derivation, so changing a plugin only rebuilds a thin profile and
 launcher layer.
 
@@ -61,21 +61,20 @@ The NixOS module does the same composition. Import
 `ida-nix.nixosModules.default` and set `programs.ida-pro.enable`, `package`,
 and `plugins`.
 
-For an IDA release that isn't in `releases.nix`, `pkgs.mkIda` takes an
-explicit installer path, Python interpreter, and release metadata. The Python
-ABI and native SDK checks are hard on purpose. Updating IDA means verifying
-the interpreter and rebuilding native plugins against that release's SDK, not
-just changing a version string.
+For an IDA release that isn't in `releases.nix`, pass `pkgs.mkIda` your own
+`release` attribute set, plus `installer` and `python` if it has no hash or
+Python pin. Updating IDA means verifying the interpreter and rebuilding native
+plugins against that release's SDK, not just changing a version string.
 
 ## Base customizations
 
-`pkgs.mkIda` accepts a `customizations` attribute set for changes that must be
-applied to the installed IDA tree. `files` maps individual source files to
-paths relative to the IDA root. `hexPatches` replaces exact byte strings after
-those files are installed and before fixup runs.
+`pkgs.mkIda` takes `files` and `hexPatches` for changes that must be applied
+to the installed IDA tree. `files` maps individual source files to paths
+relative to the IDA root. `hexPatches` replaces exact byte strings after those
+files are installed and before fixup runs.
 
 ```nix
-customizations = {
+pkgs.mkIda {
   files = [
     {
       source = ./idapro.hexlic;
@@ -90,7 +89,7 @@ customizations = {
       assertCount = 1;
     }
   ];
-};
+}
 ```
 
 Patch values must be nonempty, equal-length hex strings. Patches replace every
@@ -98,7 +97,7 @@ occurrence and fail when nothing matches. Set `assertCount` when a release has a
 known exact match count.
 
 For installers managed outside `mkIda`, `ida-nix.lib.mkHexPatcher` builds the
-same validated patcher. The generated command takes the IDA root as its only
+same patcher. The generated command takes the IDA root as its only
 argument.
 
 ```nix
@@ -109,48 +108,34 @@ patcher = ida-nix.lib.mkHexPatcher {
 
 ## Plugin API
 
-Every plugin is built with `mkIdaPlugin`, which produces a validated
-`idaPlugin` contract. Artifacts go under `$out/share/ida` using IDA's normal
-user-directory layout (`plugins`, `loaders`, `procs`, `cfg`, `idc`, `ids`,
-`sig`, `til`, `themes`).
+A plugin is any derivation that installs into `$out/share/ida` using IDA's
+user-directory layout (`plugins`, `loaders`, `procs`, `til`, and so on).
+Anything else the profile needs goes in `passthru.idaPlugin`.
 
 ```nix
-myPlugin = pkgs.mkIdaPlugin {
-  id = "my-plugin";
+myPlugin = pkgs.stdenvNoCC.mkDerivation {
+  pname = "ida-plugin-my-plugin";
   version = "1.0.0";
   src = ./my-plugin;
-  artifacts = [
-    {
-      root = "plugins";
-      path = "my_plugin.py";
-      # entrypoint = false for manifests and data files
-    }
-  ];
-  # names of bin/<name> executables the plugin ships,
-  # or { name, package, path } to wrap another package's binary
-  commands = [ ];
-  idaVersions = {
-    min = "9.0";
-    maxExclusive = "10.0";
-  };
-  pythonAbi = null;
 
   installPhase = ''
-    install -Dm644 "$src/my_plugin.py" \
-      "$out/share/ida/plugins/my_plugin.py"
+    install -Dm644 my_plugin.py "$out/share/ida/plugins/my_plugin.py"
   '';
+
+  passthru.idaPlugin = {
+    # added to the profile's Python environment
+    pythonPackages = [ ];
+    # added to PATH and LD_LIBRARY_PATH
+    runtimePackages = [ ];
+    # executables wrapped into the profile's bin with IDADIR set
+    commands = [ ];
+  };
 };
 ```
 
-Validation lives in a separate outer derivation that diffs the declared
-artifact and command inventories against what actually got installed, so a
-payload build hook can't skip it. Artifact symlinks must resolve to regular
-files in the store. Composition rejects duplicate IDs, entrypoint collisions
-(per root, case-insensitive, extension-stripped, matching IDA's discovery
-rules), command collisions, declared conflicts, missing requirements,
-incompatible IDA versions, and mismatched Python ABIs. Plugin roots are
-appended to `IDAUSR`, and the user's writable `${IDAUSR:-$HOME/.idapro}` stays
-first, so local configuration and deliberate overrides keep working.
+Plugin roots are appended to `IDAUSR`, and the user's writable
+`${IDAUSR:-$HOME/.idapro}` stays first, so local configuration and deliberate
+overrides keep working.
 
 ## MCP notes
 
@@ -161,8 +146,8 @@ generated server code is produced during the Nix build instead of at runtime.
 `nix run .#ida-pro-mcp` starts the GUI-bridge server. `idalib-mcp` needs a
 licensed IDA installation, so use the command from `ida-pro-full`, where it's
 wrapped with the matching `IDADIR`, `idapro`, and runtime libraries. The
-plugin declares a decompiler requirement because the IDALib server initializes
-Hex-Rays unconditionally. The GUI bridge listens on loopback and can mutate
+IDALib server initializes Hex-Rays unconditionally, so it needs a decompiler
+license. The GUI bridge listens on loopback and can mutate
 the open database. Only enable unsafe/debugger operations when you trust both
 the client and the binary you're analyzing.
 
@@ -173,10 +158,9 @@ nix flake check -L
 ```
 
 The suite needs no proprietary software. It builds a synthetic installer,
-exercises the real launcher and ordered `IDAUSR` composition, runs the
-contract rejection tests (including phase, builder, symlink, and
-command-ownership escapes), and builds the pinned open-source BinDiff, MCP,
-and capa packages.
+exercises the real launcher, ordered `IDAUSR` composition, and base
+customizations, and builds the pinned open-source BinDiff, MCP, and capa
+packages.
 
 There's deliberately no real IDA smoke test in public CI, since the licensed
 installer isn't available there. Run the composed package against `idat -A`

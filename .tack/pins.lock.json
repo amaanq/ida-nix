@@ -11,16 +11,16 @@
     "type": "github",
     "owner": "mrexodia",
     "repo": "ida-pro-mcp",
-    "rev": "1be78d04119748066d5e73070302ad62916002ea",
-    "narHash": "sha256-IG6ukqU2hJHnigAhj3Oo9rjWmaXrMzadBRKhBM7a1Zg=",
-    "lastModified": 1783945228
+    "rev": "c133c3853faa111a9b00ee615c013b720d0c4acd",
+    "narHash": "sha256-xyRh6rWewdMMNQFAcet47mIxEf3pFFxt/EfZoCeZcqM=",
+    "lastModified": 1790437330
   },
   "nixpkgs": {
     "type": "github",
     "owner": "NixOS",
     "repo": "nixpkgs",
-    "rev": "753cc8a3a87467296ddd1fa93f0cc3e81120ee46",
-    "narHash": "sha256-KesHgItiZPgGX740axSiQLcIQ8D24MDqNpkKYWIek8k=",
-    "lastModified": 1784120854
+    "rev": "b4fd65b198c599cbe814fcb9f42d25d021595ec9",
+    "narHash": "sha256-ilerN1WLSvF+HMjziC/Wv99J5y02maDH+6hZPwsORKg=",
+    "lastModified": 1790689126
   }
 }

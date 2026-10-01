@@ -1,11 +1,8 @@
 # Contributing
 
 Keep the installer-derived IDA package, plugin payloads, and the composition
-layer separate. New plugin packages must be built through `mkIdaPlugin` and
-must declare everything IDA can see, meaning entrypoints, exact native SDK
-compatibility, Python ABI requirements, command owners, conflicts, and
-licenses. Don't override the returned validator derivation, since that
-invalidates its contract identity and composition will reject it.
+layer separate. Native plugins must be built against the SDK of the IDA
+release they ship with, and every plugin installs its license.
 
 Run the full local suite before submitting a change.
 

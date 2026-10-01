@@ -7,9 +7,7 @@
       inputs = (import ./.tack) { overrides = args.tackOverrides or { }; };
       inherit (inputs) bindiff ida-pro-mcp nixpkgs;
       inherit (nixpkgs) lib;
-      hexPatchLib = import ./nix/hex-patches.nix { inherit lib; };
-      systems = [ "x86_64-linux" ];
-      forAllSystems = lib.genAttrs systems;
+      forAllSystems = lib.genAttrs [ "x86_64-linux" ];
       mkPkgs =
         system:
         import nixpkgs {
@@ -17,39 +15,37 @@
           config.allowUnfreePredicate = package: lib.hasPrefix "ida-pro" (lib.getName package);
         };
       mkScope =
-        system:
+        pkgs:
         import ./nix {
-          pkgs = mkPkgs system;
-          bindiffPackage = bindiff.packages.${system}.bindiff-ida;
+          inherit pkgs ida-pro-mcp;
+          bindiff = bindiff.packages.${pkgs.stdenv.hostPlatform.system}.bindiff-ida;
           bindiffSrc = bindiff.outPath;
-          inherit ida-pro-mcp;
         };
-      scopes = forAllSystems mkScope;
+      scopes = forAllSystems (system: mkScope (mkPkgs system));
     in
     {
       lib = {
         releases = import ./nix/ida/releases.nix;
-        forSystem = system: scopes.${system}.lib;
-        inherit (hexPatchLib) mkHexPatcher;
+        inherit (import ./nix/hex-patches.nix { inherit lib; }) mkHexPatcher;
       };
 
-      overlays.default = final: _prev: {
-        ida-nix = import ./nix {
-          pkgs = final;
-          bindiffPackage = bindiff.packages.${final.stdenv.hostPlatform.system}.bindiff-ida;
-          bindiffSrc = bindiff.outPath;
-          inherit ida-pro-mcp;
+      overlays.default =
+        final: _prev:
+        let
+          scope = mkScope final;
+        in
+        {
+          ida-nix = scope;
+          inherit (scope)
+            ida-pro
+            ida-pro-unwrapped
+            ida-pro-full
+            ida-pro-malware
+            ida-pro-mcp
+            mkIda
+            ;
+          idaPlugins = scope.plugins;
         };
-        inherit (final.ida-nix) ida-pro ida-pro-unwrapped;
-        inherit (final.ida-nix)
-          ida-pro-full
-          ida-pro-malware
-          ida-pro-mcp
-          ;
-        idaPlugins = final.ida-nix.plugins;
-        mkIda = final.ida-nix.mkIda;
-        mkIdaPlugin = final.ida-nix.mkIdaPlugin;
-      };
 
       legacyPackages = scopes;
 
@@ -67,13 +63,17 @@
             ida-pro-malware
             ida-pro-mcp
             ;
-          plugin-bindiff = scope.plugins.bindiff;
-          plugin-ida-pro-mcp = scope.plugins.ida-pro-mcp;
-          plugin-capa-explorer = scope.plugins.capa-explorer;
         }
+        // lib.mapAttrs' (name: lib.nameValuePair "plugin-${name}") scope.plugins
       );
 
-      checks = forAllSystems (system: import ./tests { scope = scopes.${system}; });
+      checks = forAllSystems (
+        system:
+        import ./tests {
+          pkgs = mkPkgs system;
+          scope = scopes.${system};
+        }
+      );
 
       formatter = forAllSystems (system: (mkPkgs system).nixfmt-tree);
 

@@ -1,7 +1,8 @@
 {
-  mkIdaPlugin,
+  lib,
   python,
   src,
+  stdenvNoCC,
 }:
 let
   package = python.pkgs.buildPythonApplication {
@@ -29,53 +30,34 @@ let
     meta = {
       description = "MCP and idalib servers for IDA Pro";
       homepage = "https://github.com/mrexodia/ida-pro-mcp";
-      license = python.pkgs.lib.licenses.mit;
+      license = lib.licenses.mit;
       mainProgram = "ida-pro-mcp";
     };
   };
 
-  plugin = mkIdaPlugin {
-    id = "ida-pro-mcp";
+  plugin = stdenvNoCC.mkDerivation {
     pname = "ida-plugin-ida-pro-mcp";
-    inherit (package) version;
-    inherit src;
-
-    artifacts = [
-      {
-        root = "plugins";
-        path = "ida_pro_mcp.py";
-      }
-    ];
-    commands =
-      map
-        (name: {
-          inherit name package;
-          path = "bin/${name}";
-        })
-        [
-          "ida-pro-mcp"
-          "idalib-mcp"
-        ];
-    idaVersions.min = "8.3";
-    pythonAbi = python.pythonVersion;
-    pythonPackages = [ (python.pkgs.toPythonModule package) ];
-    requiresDecompiler = true;
+    inherit (package) version src;
 
     installPhase = ''
       runHook preInstall
-      install -Dm644 \
-        src/ida_pro_mcp/ida_mcp.py \
-        "$out/share/ida/plugins/ida_pro_mcp.py"
-      install -Dm644 \
-        LICENSE \
-        "$out/share/licenses/ida-plugin-ida-pro-mcp/LICENSE"
+      install -Dm644 src/ida_pro_mcp/ida_mcp.py "$out/share/ida/plugins/ida_pro_mcp.py"
+      install -Dm644 LICENSE "$out/share/licenses/ida-plugin-ida-pro-mcp/LICENSE"
       runHook postInstall
     '';
+
+    passthru.idaPlugin = {
+      pythonPackages = [ (python.pkgs.toPythonModule package) ];
+      commands = map (name: "${package}/bin/${name}") [
+        "ida-pro-mcp"
+        "idalib-mcp"
+      ];
+    };
 
     meta = {
       description = "IDA bridge for the ida-pro-mcp server";
       homepage = "https://github.com/mrexodia/ida-pro-mcp";
-      license = python.pkgs.lib.licenses.mit;
+      license = lib.licenses.mit;
     };
   };
 in

@@ -1,53 +1,27 @@
 {
-  bindiffPackage,
+  bindiff,
   bindiffSrc,
-  mkIdaPlugin,
+  stdenvNoCC,
 }:
-mkIdaPlugin {
-  id = "bindiff";
+stdenvNoCC.mkDerivation {
   pname = "ida-plugin-bindiff";
-  inherit (bindiffPackage) version;
-  src = bindiffPackage;
+  inherit (bindiff) version;
   dontUnpack = true;
-
-  artifacts = [
-    {
-      root = "plugins";
-      path = "bindiff8_ida64.so";
-    }
-    {
-      root = "plugins";
-      path = "binexport12_ida64.so";
-    }
-  ];
-  idaVersions = {
-    min = "9.2";
-    maxExclusive = "9.5";
-  };
-  commands = [
-    {
-      name = "bindiff";
-      package = bindiffPackage;
-      path = "bin/bindiff";
-    }
-  ];
-  runtimePackages = [ bindiffPackage ];
 
   installPhase = ''
     runHook preInstall
-    install -Dm755 \
-      "$src/share/bindiff/plugins/idapro/bindiff8_ida64.so" \
-      "$out/share/ida/plugins/bindiff8_ida64.so"
-    install -Dm755 \
-      "$src/share/bindiff/plugins/idapro/binexport12_ida64.so" \
-      "$out/share/ida/plugins/binexport12_ida64.so"
-    install -Dm644 \
-      "${bindiffSrc}/LICENSE" \
-      "$out/share/licenses/ida-plugin-bindiff/LICENSE"
+    install -Dm755 -t "$out/share/ida/plugins" \
+      ${bindiff}/share/bindiff/plugins/idapro/{bindiff8_ida64,binexport12_ida64}.so
+    install -Dm644 ${bindiffSrc}/LICENSE "$out/share/licenses/ida-plugin-bindiff/LICENSE"
     runHook postInstall
   '';
 
-  meta = bindiffPackage.meta // {
+  passthru.idaPlugin = {
+    runtimePackages = [ bindiff ];
+    commands = [ "${bindiff}/bin/bindiff" ];
+  };
+
+  meta = bindiff.meta // {
     description = "BinDiff and BinExport plugins for IDA 9.2 through 9.4";
   };
 }

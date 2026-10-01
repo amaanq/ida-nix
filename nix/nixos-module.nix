@@ -6,13 +6,6 @@
 }:
 let
   cfg = config.programs.ida-pro;
-  package =
-    if cfg.plugins == [ ] then
-      cfg.package
-    else if cfg.package ? withPlugins then
-      cfg.package.withPlugins cfg.plugins
-    else
-      throw "programs.ida-pro.package does not support withPlugins";
 in
 {
   options.programs.ida-pro = {
@@ -27,11 +20,11 @@ in
       type = lib.types.listOf lib.types.package;
       default = [ ];
       example = lib.literalExpression "[ pkgs.idaPlugins.bindiff ]";
-      description = "Typed IDA plugin packages to compose with the base package.";
+      description = "IDA plugin packages to compose with the base package.";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = [ package ];
+    environment.systemPackages = [ (cfg.package.withPlugins cfg.plugins) ];
   };
 }
