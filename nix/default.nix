@@ -58,6 +58,7 @@ let
 in
 {
   inherit
+    compose
     ida-pro
     ida-pro-full
     ida-pro-malware
