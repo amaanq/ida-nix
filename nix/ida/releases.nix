@@ -1,7 +1,15 @@
 {
-  default = "9.4.260714";
+  default = "9.5.261001";
 
   versions = {
+    "9.5.261001" = {
+      version = "9.5.261001";
+      installerName = "ida-pro_95_x64linux.run";
+      installerHash = "sha256-PEM3yU/SkLiNlZN6DLOPg1J4zIznv+iLah9iaZ6QSBE=";
+      pythonPackage = "python314";
+      systems = [ "x86_64-linux" ];
+    };
+
     "9.4.260714" = {
       version = "9.4.260714";
       installerName = "ida-pro_94_x64linux.run";

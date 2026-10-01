@@ -22,6 +22,6 @@ stdenvNoCC.mkDerivation {
   };
 
   meta = bindiff.meta // {
-    description = "BinDiff and BinExport plugins for IDA 9.2 through 9.4";
+    description = "BinDiff and BinExport plugins for IDA 9.2 through 9.5";
   };
 }

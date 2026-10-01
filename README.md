@@ -5,17 +5,17 @@ packages it once, and plugins compose around it. IDA lives in
 a single derivation, so changing a plugin only rebuilds a thin profile and
 launcher layer.
 
-Currently targets IDA 9.4 on `x86_64-linux`, with 9.2 still available through
+Currently targets IDA 9.5 on `x86_64-linux`, with 9.2 still available through
 `mkIda`.
 
 ## Outputs
 
 | Output                 | Contents                                                      |
 | ---------------------- | ------------------------------------------------------------- |
-| `ida-pro`              | IDA 9.4 without third-party plugins                           |
+| `ida-pro`              | IDA 9.5 without third-party plugins                           |
 | `ida-pro-full`         | IDA, BinDiff/BinExport, and the official Hex-Rays MCP server  |
 | `ida-pro-malware`      | The full profile plus capa Explorer                           |
-| `plugin-bindiff`       | BinDiff/BinExport built with SDK 9.2, compatible through 9.4  |
+| `plugin-bindiff`       | BinDiff/BinExport built with SDK 9.2, compatible through 9.5  |
 | `plugin-ida-mcp`       | The GUI bridge for the official Hex-Rays MCP server           |
 | `plugin-capa-explorer` | capa Explorer, available as an opt-in heavy profile           |
 | `ida-mcp`              | The official Hex-Rays MCP server                              |
@@ -161,7 +161,7 @@ packages.
 
 There's deliberately no real IDA smoke test in public CI, since the licensed
 installer isn't available there. Run the composed package against `idat -A`
-before promoting a new IDA, SDK, Qt, or Python combination. The 9.4 pin
+before promoting a new IDA, SDK, Qt, or Python combination. The 9.5 pin
 selects Python 3.14, which Hex-Rays doesn't explicitly guarantee, so a pin
 update isn't validated until real GUI and headless smoke tests pass.
 

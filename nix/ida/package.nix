@@ -64,6 +64,8 @@ pkgs.stdenv.mkDerivation (finalAttrs: {
     autoPatchelfHook
     copyDesktopItems
     makeWrapper
+    # patchelf 0.15 relocates .init in libSwiftDemangle.so (IDA 9.5) without updating DT_INIT
+    patchelfUnstable
     qt6.wrapQtAppsHook
   ];
 
