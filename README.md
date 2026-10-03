@@ -5,8 +5,14 @@ packages it once, and plugins compose around it. IDA lives in
 a single derivation, so changing a plugin only rebuilds a thin profile and
 launcher layer.
 
-Currently targets IDA 9.5 on `x86_64-linux`, with 9.2 still available through
-`mkIda`.
+Currently targets IDA 9.5 on `x86_64-linux` and `aarch64-darwin`, with 9.2
+still available through `mkIda` on Linux.
+
+On macOS the installer runs inside the build, patched Mach-O files are
+re-signed ad hoc, and the profile ships an `IDA Pro.app` under `Applications`.
+IDAPython loads the profile's interpreter through `DYLD_INSERT_LIBRARIES`, so
+`idapyswitch` is never needed. BinDiff and capa Explorer are Linux-only for now
+and drop out of the macOS profiles.
 
 ## Outputs
 
@@ -31,9 +37,11 @@ Nix can't download IDA, so add the installer to the store yourself. It has to
 match the hash in [`nix/ida/releases.nix`](nix/ida/releases.nix).
 
 ```console
-nix store add --mode flat --name ida-pro_92_x64linux.run ./ida-pro_92_x64linux.run
+nix store add --mode flat --name ida-pro_95_x64linux.run ./ida-pro_95_x64linux.run
 nix build .#ida-pro-full
 ```
+
+On macOS, add `ida-pro_95_armmac.app.zip` the same way.
 
 ## Use from another Tack project
 

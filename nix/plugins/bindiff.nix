@@ -3,6 +3,9 @@
   bindiffSrc,
   stdenvNoCC,
 }:
+let
+  inherit (stdenvNoCC.hostPlatform.extensions) sharedLibrary;
+in
 stdenvNoCC.mkDerivation {
   pname = "ida-plugin-bindiff";
   inherit (bindiff) version;
@@ -11,7 +14,7 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
     install -Dm755 -t "$out/share/ida/plugins" \
-      ${bindiff}/share/bindiff/plugins/idapro/{bindiff8_ida64,binexport12_ida64}.so
+      ${bindiff}/share/bindiff/plugins/idapro/{bindiff8_ida64,binexport12_ida64}${sharedLibrary}
     install -Dm644 ${bindiffSrc}/LICENSE "$out/share/licenses/ida-plugin-bindiff/LICENSE"
     runHook postInstall
   '';

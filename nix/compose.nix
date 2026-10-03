@@ -28,6 +28,29 @@ let
           (lib.makeLibraryPath runtimePackages)
         ]
       );
+      infoPlist = pkgs.writeText "Info.plist" (
+        lib.generators.toPlist { escape = true; } {
+          CFBundleExecutable = "IDA Pro";
+          CFBundleIdentifier = "com.hexrays.ida";
+          CFBundleName = "IDA Pro";
+          CFBundleDisplayName = "IDA Pro";
+          CFBundlePackageType = "APPL";
+          CFBundleIconFile = "appico.icns";
+          CFBundleVersion = ida.version;
+          CFBundleShortVersionString = ida.version;
+          NSHighResolutionCapable = true;
+          CFBundleDocumentTypes = [
+            {
+              CFBundleTypeName = "IDA Pro Database";
+              CFBundleTypeExtensions = [
+                "idb"
+                "i64"
+              ];
+              CFBundleTypeRole = "Editor";
+            }
+          ];
+        }
+      );
       wrapCommand = command: ''
         makeWrapper ${command} "$out/bin/$(basename ${command})" \
           ${pluginEnv} \
@@ -49,7 +72,9 @@ let
       }
       ''
         mkdir -p "$out/bin"
-        ln -s ${ida}/{lib,opt,share} "$out/"
+        for entry in ${ida}/*; do
+          [ "$entry" = ${ida}/bin ] || ln -s "$entry" "$out/"
+        done
 
         for program in ida idat; do
           if [ -x "${ida}/bin/$program" ]; then
@@ -58,6 +83,12 @@ let
         done
 
         ${lib.concatMapStrings wrapCommand (collect "commands")}
+        ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+          bundle="$out/Applications/IDA Pro.app/Contents"
+          install -Dm644 ${infoPlist} "$bundle/Info.plist"
+          install -Dm644 ${ida.ida.app}/Contents/Resources/appico.icns "$bundle/Resources/appico.icns"
+          makeWrapper "$out/bin/ida" "$bundle/MacOS/IDA Pro"
+        ''}
       '';
 in
 compose

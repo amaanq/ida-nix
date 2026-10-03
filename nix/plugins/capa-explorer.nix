@@ -25,5 +25,6 @@ stdenvNoCC.mkDerivation {
     description = "capa capability explorer for IDA Pro";
     homepage = "https://github.com/mandiant/capa";
     license = lib.licenses.asl20;
+    inherit (capa.meta) broken;
   };
 }

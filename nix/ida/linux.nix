@@ -141,7 +141,7 @@ pkgs.stdenv.mkDerivation (finalAttrs: {
     homepage = "https://hex-rays.com/ida-pro/";
     license = release.license or lib.licenses.unfree;
     mainProgram = "ida";
-    platforms = release.systems;
+    platforms = lib.intersectLists (lib.attrNames release.installers) lib.platforms.linux;
     sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
   };
 })

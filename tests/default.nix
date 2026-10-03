@@ -1,16 +1,36 @@
 { pkgs, scope }:
 let
   inherit (pkgs) lib;
-  fixtureInstaller = pkgs.runCommandCC "ida-fixture-installer" { } ''
+  fixtureBinary = pkgs.runCommandCC "ida-fixture-installer" { } ''
     "$CC" ${./fixtures/installer.c} -o "$out"
   '';
+  # Hex-Rays ships the macOS installer as a zipped app that installs another app
+  fixtureInstaller =
+    if pkgs.stdenv.hostPlatform.isDarwin then
+      pkgs.runCommand "ida-fixture-installer.zip" { nativeBuildInputs = [ pkgs.zip ]; } ''
+        installer=fixture.app/Contents/MacOS/osx-${pkgs.stdenv.hostPlatform.darwinArch}
+        mkdir -p "$(dirname "$installer")"
+        cp ${fixtureBinary} fixture.app/Contents/MacOS/fixture
+        cat > "$installer" <<'EOF'
+        #!/bin/sh
+        app="$4/IDA Fixture.app/Contents"
+        mkdir -p "$app/Resources"
+        touch "$app/Resources/appico.icns"
+        exec "$(dirname "$0")/fixture" --prefix "$app/MacOS"
+        EOF
+        chmod +x "$installer"
+        zip -qr installer.zip fixture.app
+        mv installer.zip "$out"
+      ''
+    else
+      fixtureBinary;
   mkFixtureIda =
     args:
     scope.mkIda (
       {
         release = {
           version = "9.2.test";
-          systems = [ pkgs.stdenv.hostPlatform.system ];
+          installers.${pkgs.stdenv.hostPlatform.system} = { };
           license = lib.licenses.mit;
         };
         installer = fixtureInstaller;
@@ -49,16 +69,14 @@ let
     ];
   };
   stackedFixtureIda = fixtureIda.withPlugins [ secondFixturePlugin ];
-  pythonFixtureIda = mkFixtureIda {
-    plugins = [
-      scope.plugins.ida-mcp
-      scope.plugins.capa-explorer
-    ];
-  };
+  pythonPlugins = lib.intersectAttrs {
+    ida-mcp = null;
+    capa-explorer = null;
+  } scope.plugins;
+  pythonFixtureIda = mkFixtureIda { plugins = lib.attrValues pythonPlugins; };
 in
-{
-  inherit (scope.plugins) bindiff;
-
+lib.intersectAttrs { bindiff = null; } scope.plugins
+// {
   ida-mcp = pkgs.runCommand "ida-nix-ida-mcp-check" { } ''
     test -x ${dirOf (builtins.head scope.plugins.ida-mcp.idaPlugin.commands)}/ida-nexus
     touch "$out"
@@ -80,9 +98,9 @@ in
     grep -Fx "IDAUSR=$homeRoot/.idapro:$pluginRoot" <<< "$commandOutput"
     grep -E '^PYTHON=.+/bin/python3$' <<< "$commandOutput"
 
-    cmp "${fixtureIda}/opt/ida/docs/asset with spaces.png" \
+    cmp "${fixtureIda.ida.root}/docs/asset with spaces.png" \
       <(printf '\004\005\006\007\004\005\006\007')
-    grep -Fx fixture ${fixtureIda}/opt/ida/idapro.hexlic
+    grep -Fx fixture ${fixtureIda.ida.root}/idapro.hexlic
     touch "$out"
   '';
 
@@ -107,7 +125,9 @@ in
     '';
 
   python-environment = pkgs.runCommand "ida-nix-python-environment-check" { } ''
-    ${pythonFixtureIda.pythonEnv}/bin/python3 -c 'import capa, ida_mcp, ida_nexus'
+    ${pythonFixtureIda.pythonEnv}/bin/python3 -c 'import ida_mcp, ida_nexus${
+      lib.optionalString (pythonPlugins ? capa-explorer) ", capa"
+    }'
     test -x ${pythonFixtureIda}/bin/ida-mcp
     touch "$out"
   '';

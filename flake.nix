@@ -7,7 +7,10 @@
       inputs = (import ./.tack) { overrides = args.tackOverrides or { }; };
       inherit (inputs) bindiff nixpkgs;
       inherit (nixpkgs) lib;
-      forAllSystems = lib.genAttrs [ "x86_64-linux" ];
+      forAllSystems = lib.genAttrs [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ];
       mkPkgs =
         system:
         import nixpkgs {
