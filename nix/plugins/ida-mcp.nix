@@ -56,6 +56,11 @@ let
       inherit (finalAttrs) version;
       hash = "sha256-MvnHb2FffyxAfQoaZ8YAIRGm/toBT5Zy9H5K/8Qfiw4=";
     };
+    postPatch = ''
+      substituteInPlace ida_mcp/mcp.py \
+        --replace-fail "raise SystemExit(128 + signum)" "os._exit(128 + signum)"
+    '';
+
     build-system = [ hatchling ];
     dependencies = [
       ida-nexus
